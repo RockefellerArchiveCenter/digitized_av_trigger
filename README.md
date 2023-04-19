@@ -1,27 +1,27 @@
-# digitized_av_notifications
-Handles notifications for validation and packaging of incoming digitized audiovisual assets.
+# digitized_av_trigger
+Invokes AWS Elastic Container Service (ECS) tasks when objects are created in S3 buckets.
 
-[![Build Status](https://app.travis-ci.com/RockefellerArchiveCenter/digitized_av_notifications.svg?branch=base)](https://app.travis-ci.com/RockefellerArchiveCenter/digitized_av_notifications)
+[![Build Status](https://app.travis-ci.com/RockefellerArchiveCenter/digitized_av_trigger.svg?branch=base)](https://app.travis-ci.com/RockefellerArchiveCenter/digitized_av_trigger)
 
 ## Getting Started
 
 With [git](https://git-scm.com/) installed, pull down the source code and move into the newly created directory:
 
 ```
-git clone https://github.com/RockefellerArchiveCenter/digitized_av_notifications.git
-cd digitized_av_notifications
+git clone https://github.com/RockefellerArchiveCenter/digitized_av_trigger.git
+cd digitized_av_trigger
 ```
 
 With the [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html) and [Docker](https://www.docker.com/community-edition) installed, build the application:
 
 ```
-sam build --hook-name terraform --beta-features aws_lambda_function.handle_digitized_av_notifications
+sam build
 ```
 
 Then, invoke the function using one of the fixtures:
 
 ```
-sam local invoke --hook-name terraform --beta-features handle_digitized_av_notifications -e fixtures/failure_message.json
+sam local invoke handle_digitized_av_notifications -e fixtures/failure_message.json
 ```
 
 ## Usage
