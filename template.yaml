@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  digitized-av-trigger
+
+  Handles notifications for validation and packaging of incoming digitized audiovisual assets.
+
+Globals:
+  Function:
+    Timeout: 3
+
+Parameters:
+  LambdaRole:
+    Type: String
+    Description: IAM Role ARN for Lambda function
+
+Resources:
+  DigitizedAvTriggerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src
+      Handler: handle_digitized_av_trigger.lambda_handler
+      FunctionName: digitized_av_trigger
+      Runtime: python3.9
+      Role: !Ref LambdaRole
+      Timeout: 10
+      Architectures:
+        - x86_64
+      Events:
+        DigitizedAvEvents:
+          Type: SNS
+          Properties:
+            Topic: !Ref DigitizedAvEvents
+
+Outputs:
+  HelloWorldFunction:
+    Description: "Digitized AV Trigger Lambda Function ARN"
+    Value: !GetAtt DigitizedAvTriggerFunction.Arn
