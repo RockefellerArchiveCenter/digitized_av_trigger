@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-import json
 import logging
+from os import environ
 
 import boto3
 
@@ -13,14 +13,22 @@ FORMAT_MAP = {
     'rac-av-upload-video': 'video'
 }
 
+
 def lambda_handler(event, context):
     """Main handler for function."""
 
     bucket = event['Records'][0]['s3']['bucket']['name']
     object = event['Records'][0]['s3']['object']['key']
     format = FORMAT_MAP[bucket]
-    client = boto3.client('ecs')
-    container = ""
+    client = boto3.client(
+        'ecs', region_name=environ.get(
+            'AWS_REGION', 'us-east-1'))
+
+    logger.info(
+        "Running task for event from object {} in bucket {} with format {}".format(
+            object,
+            bucket,
+            format))
 
     return client.run_task(
         launchType='FARGATE',
@@ -34,7 +42,7 @@ def lambda_handler(event, context):
                     "environment": [
                         {
                             "name": "FORMAT",
-                            "value":  format
+                            "value": format
                         },
                         {
                             "name": "AWS_SOURCE_BUCKET",
