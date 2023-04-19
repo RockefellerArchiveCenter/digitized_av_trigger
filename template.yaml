@@ -10,9 +10,16 @@ Globals:
     Timeout: 3
 
 Parameters:
-  LambdaRole:
+  AudioUploadBucketName:
     Type: String
-    Description: IAM Role ARN for Lambda function
+    Description: Name of an S3 bucket to which audio assets are uploaded.
+  VideoUploadBucketName:
+    Type: String
+    Description: Name of an S3 bucket to which audio assets are uploaded.
+  QcBucketName:
+    Type: String
+    Description: Name of a bucket into which validated assets are moved.
+    Default: 'rac-av-qc'
 
 Resources:
   DigitizedAvTriggerFunction:
@@ -22,17 +29,40 @@ Resources:
       Handler: handle_digitized_av_trigger.lambda_handler
       FunctionName: digitized_av_trigger
       Runtime: python3.9
-      Role: !Ref LambdaRole
       Timeout: 10
       Architectures:
         - x86_64
       Events:
-        DigitizedAvEvents:
-          Type: SNS
+        AudioEvents:
+          Type: S3
           Properties:
-            Topic: !Ref DigitizedAvEvents
+            Bucket: !Ref AudioUploadBucket
+            Events:
+              - 's3:ObjectCreated:*'
+        VideoEvents:
+          Type: S3
+          Properties:
+            Bucket: 
+              Ref: VideoUploadBucket
+            Events:
+              - 's3:ObjectCreated:*'
+
+  AudioUploadBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref AudioUploadBucketName
+  VideoUploadBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref VideoUploadBucketName
+  QcBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref QcBucketName
+
+  #TODO IAM role that can call ecs:RunTask
 
 Outputs:
-  HelloWorldFunction:
+  DigitizedAvTriggerFunction:
     Description: "Digitized AV Trigger Lambda Function ARN"
     Value: !GetAtt DigitizedAvTriggerFunction.Arn
