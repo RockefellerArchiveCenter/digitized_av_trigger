@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 import logging
 from os import environ
 
@@ -30,8 +31,16 @@ def lambda_handler(event, context):
             bucket,
             format))
 
-    return client.run_task(
+    response = client.run_task(
+        cluster=environ.get('ECS_CLUSTER'),
         launchType='FARGATE',
+        networkConfiguration={
+            'awsvpcConfiguration': {
+                'subnets': [environ.get('ECS_SUBNET')],
+                'securityGroups': [],
+                'assignPublicIp': 'DISABLED'
+            }
+        },
         taskDefinition='digitized_av_validation',
         count=1,
         startedBy='lambda/digitized_av_trigger',
@@ -57,3 +66,5 @@ def lambda_handler(event, context):
             ]
         }
     )
+
+    return json.dumps(response, default=str)

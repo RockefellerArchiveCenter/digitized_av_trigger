@@ -31,7 +31,7 @@ def test_args():
             ('put_audio.json', 'audio_args.json'), ('put_video.json', 'video_args.json')]:
         with open(Path('fixtures', fixture), 'r') as df:
             message = json.load(df)
-            response = lambda_handler(message, None)
+            response = json.loads(lambda_handler(message, None))
             assert len(response['tasks']) == 1
             assert response['tasks'][0]['startedBy'] == 'lambda/digitized_av_trigger'
             assert response['tasks'][0][
