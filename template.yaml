@@ -20,6 +20,14 @@ Parameters:
     Type: String
     Description: Name of a bucket into which validated assets are moved.
     Default: 'rac-av-qc'
+  EcsCluster:
+    Type: String
+    Description: The short name or full ARN of the ECS cluster to run your task on.
+    Default: 'RACCLUS'
+  EcsSubnet:
+    Type: String
+    Description: The IDs of the subnet in which the ECS task should run.
+    Default: 'subnet-0102189437e2babd8'
 
 Resources:
   DigitizedAvTriggerFunction:
@@ -32,6 +40,12 @@ Resources:
       Timeout: 10
       Architectures:
         - x86_64
+      Environment:
+        Variables:
+          ECS_CLUSTER:
+            Ref: EcsCluster
+          ECS_SUBNET:
+            Ref: EcsSubnet
       Events:
         AudioEvents:
           Type: S3
@@ -60,7 +74,7 @@ Resources:
     Properties:
       BucketName: !Ref QcBucketName
 
-  #TODO IAM role that can call ecs:RunTask
+#TODO IAM role that can call ecs:RunTask
 
 Outputs:
   DigitizedAvTriggerFunction:
