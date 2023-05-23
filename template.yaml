@@ -10,16 +10,6 @@ Globals:
     Timeout: 3
 
 Parameters:
-  AudioUploadBucketName:
-    Type: String
-    Description: Name of an S3 bucket to which audio assets are uploaded.
-  VideoUploadBucketName:
-    Type: String
-    Description: Name of an S3 bucket to which audio assets are uploaded.
-  QcBucketName:
-    Type: String
-    Description: Name of a bucket into which validated assets are moved.
-    Default: 'rac-av-qc'
   EcsCluster:
     Type: String
     Description: The short name or full ARN of the ECS cluster to run your task on.
@@ -45,7 +35,20 @@ Resources:
       Description: IAM Role which supports calling ecs:RunTask.
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-        - arn:aws:iam::817658541382:policy/DigitizedAVRunECSTask
+      Policies: 
+        - PolicyName: DigitizedAVRunECSTaskPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: 'ecs:RunTask'
+                Resource: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/digitized_av_*'
+              - Effect: Allow
+                Action: 'iam:PassRole'
+                Resource: '*'
+                Condition:
+                  StringLike:
+                    'iam:PassedToService': 'ecs-tasks.amazonaws.com'
   DigitizedAvTriggerFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -63,33 +66,6 @@ Resources:
             Ref: EcsCluster
           ECS_SUBNET:
             Ref: EcsSubnet
-      Events:
-        AudioEvents:
-          Type: S3
-          Properties:
-            Bucket: !Ref AudioUploadBucket
-            Events:
-              - 's3:ObjectCreated:*'
-        VideoEvents:
-          Type: S3
-          Properties:
-            Bucket: 
-              Ref: VideoUploadBucket
-            Events:
-              - 's3:ObjectCreated:*'
-
-  AudioUploadBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Ref AudioUploadBucketName
-  VideoUploadBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Ref VideoUploadBucketName
-  QcBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Ref QcBucketName
 
 Outputs:
   DigitizedAvTriggerFunction:
