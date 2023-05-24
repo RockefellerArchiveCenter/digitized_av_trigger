@@ -55,7 +55,7 @@ Resources:
       CodeUri: ./src
       Handler: handle_digitized_av_trigger.lambda_handler
       FunctionName: digitized_av_trigger
-      Role: DigitizedAvTriggerFunctionRole.Arn
+      Role: !GetAtt DigitizedAvTriggerFunctionRole.Arn
       Runtime: python3.9
       Timeout: 10
       Architectures:
@@ -71,3 +71,5 @@ Outputs:
   DigitizedAvTriggerFunction:
     Description: "Digitized AV Trigger Lambda Function ARN"
     Value: !GetAtt DigitizedAvTriggerFunction.Arn
+    Export:
+      Name: DigitizedAV-TriggerArn
