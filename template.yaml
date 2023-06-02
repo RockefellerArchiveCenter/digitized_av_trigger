@@ -10,14 +10,17 @@ Globals:
     Timeout: 3
 
 Parameters:
-  EcsCluster:
+  ApplicationEnvironment:
     Type: String
-    Description: The short name or full ARN of the ECS cluster to run your task on.
-    Default: 'RACCLUS'
-  EcsSubnet:
+    Description: The environment in which the application should be deployed.
+    AllowedValues:
+      - dev
+      - prod
+    Default: dev
+  ApplicationName:
     Type: String
-    Description: The IDs of the subnet in which the ECS task should run.
-    Default: 'subnet-0102189437e2babd8'
+    Description: The name of the application to be deployed.
+    Default: digitized-av-trigger
 
 Resources:
   DigitizedAvTriggerFunctionRole:
@@ -49,6 +52,10 @@ Resources:
                 Condition:
                   StringLike:
                     'iam:PassedToService': 'ecs-tasks.amazonaws.com'
+              - Effect: Allow
+                Action: 
+                  - 'ssm:GetParametersByPath*'
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ApplicationEnvironment}/${ApplicationName}*'
   DigitizedAvTriggerFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -62,10 +69,10 @@ Resources:
         - x86_64
       Environment:
         Variables:
-          ECS_CLUSTER:
-            Ref: EcsCluster
-          ECS_SUBNET:
-            Ref: EcsSubnet
+          ENV:
+            Ref: ApplicationEnvironment
+          APP_CONFIG_PATH:
+            Ref: ApplicationName
 
 Outputs:
   DigitizedAvTriggerFunction:
