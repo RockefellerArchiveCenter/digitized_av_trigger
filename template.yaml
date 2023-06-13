@@ -70,9 +70,9 @@ Resources:
   ECSClusterParam:
     Type: AWS::SSM::Parameter
     Properties: 
-      AllowedPattern: "^[A-Za-z0-9\\-\\_]$"
+      AllowedPattern: "^[A-Za-z0-9\\-\\_]+$"
       Description: Name of ECS Cluster in which Task should be triggered.
-      Name: !Sub /${ApplicationEnvironment}/${ApplicationName}/TEAMS_URL
+      Name: !Sub /${ApplicationEnvironment}/${ApplicationName}/ECS_CLUSTER
       Tags: 
         Environment: !Ref ApplicationEnvironment
         Application: !Ref ApplicationName
@@ -81,9 +81,9 @@ Resources:
   ECSSubnetParam:
     Type: AWS::SSM::Parameter
     Properties: 
-      AllowedPattern: "^subnet-[A-Za-z0-9]$"
+      AllowedPattern: "^[A-Za-z0-9\\-\\_]+$"
       Description: Subnet in which ECS Task should be triggered.
-      Name: !Sub /${ApplicationEnvironment}/${ApplicationName}/TEAMS_URL
+      Name: !Sub /${ApplicationEnvironment}/${ApplicationName}/ECS_SUBNET
       Tags: 
         Environment: !Ref ApplicationEnvironment
         Application: !Ref ApplicationName
@@ -107,8 +107,6 @@ Resources:
             Ref: ApplicationEnvironment
           APP_CONFIG_PATH:
             Ref: ApplicationName
-          AWS_REGION:
-            Ref: AWS::Region
 
 Outputs:
   DigitizedAvTriggerFunction:
