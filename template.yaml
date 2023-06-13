@@ -12,15 +12,21 @@ Globals:
 Parameters:
   ApplicationEnvironment:
     Type: String
-    Description: The environment in which the application should be deployed.
+    Description: Environment in which the application should be deployed.
     AllowedValues:
       - dev
       - prod
     Default: dev
   ApplicationName:
     Type: String
-    Description: The name of the application to be deployed.
+    Description: Name of the application to be deployed.
     Default: digitized-av-trigger
+  ECSClusterName:
+    Type: String
+    Description: Name of the ECS Cluster in which the Task should be triggered.
+  ECSSubnetName:
+    Type: String
+    Description: Name of the subnet in which the ECS Task should be triggered.
 
 Resources:
   DigitizedAvTriggerFunctionRole:
@@ -60,6 +66,30 @@ Resources:
                 Action: 
                   - 'ssm:GetParametersByPath*'
                 Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ApplicationEnvironment}/${ApplicationName}*'
+
+  ECSClusterParam:
+    Type: AWS::SSM::Parameter
+    Properties: 
+      AllowedPattern: "^[A-Za-z0-9\\-\\_]$"
+      Description: Name of ECS Cluster in which Task should be triggered.
+      Name: !Sub /${ApplicationEnvironment}/${ApplicationName}/TEAMS_URL
+      Tags: 
+        Environment: !Ref ApplicationEnvironment
+        Application: !Ref ApplicationName
+      Type: String
+      Value: !Ref ECSClusterName
+  ECSSubnetParam:
+    Type: AWS::SSM::Parameter
+    Properties: 
+      AllowedPattern: "^subnet-[A-Za-z0-9]$"
+      Description: Subnet in which ECS Task should be triggered.
+      Name: !Sub /${ApplicationEnvironment}/${ApplicationName}/TEAMS_URL
+      Tags: 
+        Environment: !Ref ApplicationEnvironment
+        Application: !Ref ApplicationName
+      Type: String
+      Value: !Ref ECSSubnetName
+
   DigitizedAvTriggerFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -77,6 +107,8 @@ Resources:
             Ref: ApplicationEnvironment
           APP_CONFIG_PATH:
             Ref: ApplicationName
+          AWS_REGION:
+            Ref: AWS::Region
 
 Outputs:
   DigitizedAvTriggerFunction:

@@ -15,7 +15,7 @@ FORMAT_MAP = {
     'rac-av-upload-video': 'video'
 }
 
-ssm_client = boto3.client('ssm')
+ssm_client = boto3.client('ssm', region=environ.get('AWS_REGION'))
 full_config_path = f"/{environ.get('ENV')}/{environ.get('APP_CONFIG_PATH')}"
 
 
@@ -58,7 +58,7 @@ def lambda_handler(event, context):
     config = get_config(full_config_path)
     ecs_client = boto3.client(
         'ecs',
-        region_name=config.get('AWS_REGION'))
+        region_name=environ.get('AWS_REGION'))
 
     logger.info(
         "Running task for event from object {} in bucket {} with format {}".format(
