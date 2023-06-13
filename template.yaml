@@ -52,6 +52,10 @@ Resources:
                 Condition:
                   StringLike:
                     'iam:PassedToService': 'ecs-tasks.amazonaws.com'
+        - PolicyName: DigitizedAVParameterStorePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
               - Effect: Allow
                 Action: 
                   - 'ssm:GetParametersByPath*'
