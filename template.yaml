@@ -16,11 +16,9 @@ Parameters:
     AllowedValues:
       - dev
       - prod
-    Default: dev
   ApplicationName:
     Type: String
     Description: Name of the application to be deployed.
-    Default: digitized-av-trigger
   ECSClusterName:
     Type: String
     Description: Name of the ECS Cluster in which the Task should be triggered.
