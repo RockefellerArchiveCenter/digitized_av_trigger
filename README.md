@@ -12,18 +12,6 @@ git clone https://github.com/RockefellerArchiveCenter/digitized_av_trigger.git
 cd digitized_av_trigger
 ```
 
-With the [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html) and [Docker](https://www.docker.com/community-edition) installed, build the application:
-
-```
-sam build
-```
-
-Then, invoke the function using one of the fixtures:
-
-```
-sam local invoke handle_digitized_av_notifications -e fixtures/failure_message.json
-```
-
 ## Usage
 
 This repository is intended to be deployed as a Lambda script in AWS infrastructure.

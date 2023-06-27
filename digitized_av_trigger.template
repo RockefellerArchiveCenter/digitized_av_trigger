@@ -1,13 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
 Description: >
   digitized-av-trigger
 
   Handles notifications for validation and packaging of incoming digitized audiovisual assets.
-
-Globals:
-  Function:
-    Timeout: 3
 
 Parameters:
   ApplicationEnvironment:
@@ -89,22 +84,37 @@ Resources:
       Value: !Ref ECSSubnetName
 
   DigitizedAvTriggerFunction:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
-      CodeUri: ./src
+      Code:
+        S3Bucket: !Sub 'rac-${ApplicationEnvironment}-lambda'
+        S3Key: !Sub '${ApplicationName}.zip'
+      FunctionName: !Ref ApplicationName
       Handler: handle_digitized_av_trigger.lambda_handler
-      FunctionName: digitized_av_trigger
       Role: !GetAtt DigitizedAvTriggerFunctionRole.Arn
       Runtime: python3.9
       Timeout: 10
-      Architectures:
-        - x86_64
       Environment:
         Variables:
           ENV:
             Ref: ApplicationEnvironment
           APP_CONFIG_PATH:
             Ref: ApplicationName
+      Architectures:
+        - x86_64
+      Tags: 
+        - Key: Environment
+          Value: !Ref ApplicationEnvironment
+        - Key: Application
+          Value: !Ref ApplicationName
+
+  DigitizedAvTriggerFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref DigitizedAvTriggerFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub arn:aws:s3:::rac-${ApplicationEnvironment}-av-upload-*
 
 Outputs:
   DigitizedAvTriggerFunction:
