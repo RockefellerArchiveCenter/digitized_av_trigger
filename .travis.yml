@@ -7,16 +7,21 @@ before_script:
 
 script: tox
 
-matrix:
-  include:
-
-    - python: "3.10"
-      env: TOXENV=py310
-
-    # Linters
-
-    - python: "3.10"
-      env: TOXENV=linting
+deploy:
+  - provider: s3
+    bucket: rac-dev-cloudfront-apps
+    access_key_id: $AWS_ACCESS_KEY_ID
+    secret_access_key: $AWS_SECRET_ACCESS_KEY
+    glob: digitized_av_trigger.template
+    on:
+      branch: development
+  - provider: s3
+    bucket: rac-prod-cloudfront-apps
+    access_key_id: $AWS_ACCESS_KEY_ID
+    secret_access_key: $AWS_SECRET_ACCESS_KEY
+    glob: digitized_av_trigger.template
+    on:
+      branch: base
 
 notifications:
   email: false
