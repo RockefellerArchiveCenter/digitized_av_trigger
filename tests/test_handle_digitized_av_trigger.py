@@ -49,7 +49,7 @@ def test_args(mock_config):
 
 @mock_ssm
 def test_config():
-    ssm = boto3.client('ssm')
+    ssm = boto3.client('ssm', region_name='us-east-1')
     path = "/dev/digitized_av_trigger"
     for name, value in [("foo", "bar"), ("baz", "buzz")]:
         ssm.put_parameter(
