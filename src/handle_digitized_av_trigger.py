@@ -30,9 +30,9 @@ def get_config(ssm_parameter_path):
     configuration = {}
     try:
         ssm_client = boto3.client(
-            'ssm', 
+            'ssm',
             region_name=environ.get('AWS_DEFAULT_REGION', 'us-east-1'))
-        
+
         param_details = ssm_client.get_parameters_by_path(
             Path=ssm_parameter_path,
             Recursive=False,
