@@ -14,7 +14,7 @@ FORMAT_MAP = {
     'rac-prod-av-upload-audio': 'audio',
     'rac-dev-av-upload-audio': 'audio',
     'rac-prod-av-upload-video': 'video',
-    'rac-prod-av-upload-video': 'video',
+    'rac-dev-av-upload-video': 'video',
 }
 
 full_config_path = f"/{environ.get('ENV')}/{environ.get('APP_CONFIG_PATH')}"
