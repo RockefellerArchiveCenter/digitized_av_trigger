@@ -6,7 +6,7 @@
 			},
 			{
 				"name": "AWS_SOURCE_BUCKET",
-				"value": "rac-av-upload-audio"
+				"value": "rac-dev-av-upload-audio"
 			},
 			{
 				"name": "SOURCE_FILENAME",
