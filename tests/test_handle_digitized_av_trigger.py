@@ -69,6 +69,10 @@ def test_sns_args(mock_config):
             }
         ],
     )
+    client.create_service(
+        cluster=test_cluster_name,
+        serviceName='digitized_av_qc'
+    )
 
     for fixture, expected_args in [
             ('sns_audio_accept.json', 'sns_audio_args.json'),
@@ -89,6 +93,25 @@ def test_sns_args(mock_config):
             message = json.load(df)
             response = json.loads(lambda_handler(message, None))
             assert 'Nothing to do for SNS event:' in response
+
+    with open(Path('fixtures', 'sns_video_valid.json'), 'r') as df:
+        created = client.describe_services(services=['digitized_av_qc'])
+        assert created['services'][0]['desiredCount'] == 0
+
+        message = json.load(df)
+        response = json.loads(lambda_handler(message, None))
+        assert response['service']['desiredCount'] == 1
+
+    with open(Path('fixtures', 'sns_complete.json'), 'r') as df:
+        client.update_service(
+            service='digitized_av_qc',
+            desiredCount=1)
+        created = client.describe_services(services=['digitized_av_qc'])
+        assert created['services'][0]['desiredCount'] == 1
+
+        message = json.load(df)
+        response = json.loads(lambda_handler(message, None))
+        assert response['service']['desiredCount'] == 0
 
 
 @mock_ssm

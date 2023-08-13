@@ -78,6 +78,93 @@ def run_task(ecs_client, config, task_definition, environment):
     )
 
 
+def handle_s3_object_put(config, ecs_client, event):
+    """Handles actions for newly created objects in S3 buckets."""
+
+    bucket = event['Records'][0]['s3']['bucket']['name']
+    object = event['Records'][0]['s3']['object']['key']
+    format = FORMAT_MAP[bucket]
+
+    logger.info(
+        "Running validation task for event from object {} in bucket {} with format {}".format(
+            object,
+            bucket,
+            format))
+
+    environment = [
+        {
+            "name": "FORMAT",
+            "value": format
+        },
+        {
+            "name": "AWS_SOURCE_BUCKET",
+            "value": bucket
+        },
+        {
+            "name": "SOURCE_FILENAME",
+            "value": object
+        }
+    ]
+
+    return run_task(
+        ecs_client,
+        config,
+        'digitized_av_validation',
+        environment)
+
+
+def handle_qc_approval(config, ecs_client, attributes):
+    """Handles QC approval of package."""
+
+    format = attributes['format']['Value']
+    refid = attributes['refid']['Value']
+    rights_ids = attributes['rights_ids']['Value']
+
+    logger.info(
+        "Running packaging task for event from object {} with format {}".format(
+            refid,
+            format))
+
+    environment = [
+        {
+            "name": "FORMAT",
+            "value": format
+        },
+        {
+            "name": "REFID",
+            "value": refid
+        },
+        {
+            "name": "RIGHTS_IDS",
+            "value": rights_ids
+        }
+    ]
+
+    return run_task(
+        ecs_client,
+        config,
+        'digitized_av_packaging',
+        environment)
+
+
+def handle_validation_approval(config, ecs_client):
+    """Scales up ECS Service when items are waiting for QC"""
+    service = ecs_client.describe_services(
+        cluster=config.get('ECS_CLUSTER'),
+        services=['digitized_av_qc'])
+    if service['services'][0]['desiredCount'] < 1:
+        return ecs_client.update_service(
+            service='digitized_av_qc',
+            desiredCount=1)
+
+
+def handle_qc_complete(ecs_client):
+    """Scales down ECS Service when nothing is left to QC"""
+    return ecs_client.update_service(
+        service='digitized_av_qc',
+        desiredCount=0)
+
+
 def lambda_handler(event, context):
     """Triggers ECS task."""
 
@@ -89,36 +176,11 @@ def lambda_handler(event, context):
     if event['Records'][0].get('s3'):
         """Handles events from S3 buckets."""
 
-        bucket = event['Records'][0]['s3']['bucket']['name']
-        object = event['Records'][0]['s3']['object']['key']
-        format = FORMAT_MAP[bucket]
+        event_type = event['Records'][0]['eventName']
 
-        logger.info(
-            "Running validation task for event from object {} in bucket {} with format {}".format(
-                object,
-                bucket,
-                format))
-
-        environment = [
-            {
-                "name": "FORMAT",
-                "value": format
-            },
-            {
-                "name": "AWS_SOURCE_BUCKET",
-                "value": bucket
-            },
-            {
-                "name": "SOURCE_FILENAME",
-                "value": object
-            }
-        ]
-
-        response = run_task(
-            ecs_client,
-            config,
-            'digitized_av_validation',
-            environment)
+        if event_type == 'ObjectCreated:Put':
+            """Handles PutObject events."""
+            response = handle_s3_object_put(config, ecs_client, event)
 
     elif event['Records'][0].get('Sns'):
         """Handles events from SNS."""
@@ -127,39 +189,18 @@ def lambda_handler(event, context):
 
         response = f'Nothing to do for SNS event: {event}'
 
-        if ((attributes['service']['Value'] == 'qc') and (
-                attributes['outcome']['Value'] == 'SUCCESS')):
-            """Handles QC approval events."""
+        if (attributes['service']['Value'] == 'validation'):
+            if attributes['outcome']['Value'] == 'SUCCESS':
+                """Handles QC approval events."""
+                response = handle_validation_approval(config, ecs_client)
 
-            format = attributes['format']['Value']
-            refid = attributes['refid']['Value']
-            rights_ids = attributes['rights_ids']['Value']
-
-            logger.info(
-                "Running packaging task for event from object {} with format {}".format(
-                    refid,
-                    format))
-
-            environment = [
-                {
-                    "name": "FORMAT",
-                    "value": format
-                },
-                {
-                    "name": "REFID",
-                    "value": refid
-                },
-                {
-                    "name": "RIGHTS_IDS",
-                    "value": rights_ids
-                }
-            ]
-
-            response = run_task(
-                ecs_client,
-                config,
-                'digitized_av_packaging',
-                environment)
+        if (attributes['service']['Value'] == 'qc'):
+            if attributes['outcome']['Value'] == 'SUCCESS':
+                """Handles QC approval events."""
+                response = handle_qc_approval(config, ecs_client, attributes)
+            elif attributes['outcome']['Value'] == 'COMPLETE':
+                """Handles completion of QC."""
+                response = handle_qc_complete(ecs_client)
 
     else:
         raise Exception('Unsure how to parse message')
