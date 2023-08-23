@@ -178,6 +178,8 @@ def lambda_handler(event, context):
 
         event_type = event['Records'][0]['eventName']
 
+        response = f'Nothing to do for S3 event: {event}'
+
         if event_type == 'ObjectCreated:Put':
             """Handles PutObject events."""
             response = handle_s3_object_put(config, ecs_client, event)
