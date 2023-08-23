@@ -182,7 +182,8 @@ def lambda_handler(event, context):
 
         response = f'Nothing to do for S3 event: {event}'
 
-        if event_type in ['ObjectCreated:Put', 'ObjectCreated:CompleteMultipartUpload']:
+        if event_type in ['ObjectCreated:Put',
+                          'ObjectCreated:CompleteMultipartUpload']:
             """Handles object creation events."""
             response = handle_s3_object_put(config, ecs_client, event)
 
