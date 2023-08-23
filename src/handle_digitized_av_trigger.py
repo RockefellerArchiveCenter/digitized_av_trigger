@@ -176,6 +176,8 @@ def lambda_handler(event, context):
     if event['Records'][0].get('s3'):
         """Handles events from S3 buckets."""
 
+        logger.info(f"Received S3 event {event}")
+
         event_type = event['Records'][0]['eventName']
 
         response = f'Nothing to do for S3 event: {event}'
@@ -186,6 +188,8 @@ def lambda_handler(event, context):
 
     elif event['Records'][0].get('Sns'):
         """Handles events from SNS."""
+
+        logger.info(f"Received SNS event {event}")
 
         attributes = event['Records'][0]['Sns']['MessageAttributes']
 
