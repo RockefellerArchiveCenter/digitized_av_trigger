@@ -108,13 +108,31 @@ Resources:
         - Key: Application
           Value: !Ref ApplicationName
 
-  DigitizedAvTriggerFunctionPermission:
+  # Allow S3 to trigger Lambda
+  DigitizedAvTriggerS3FunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !Ref DigitizedAvTriggerFunction
       Principal: s3.amazonaws.com
       SourceArn: !Sub arn:aws:s3:::rac-${ApplicationEnvironment}-av-upload-*
+
+  # Allow SNS to trigger Lambda
+  DigitizedAvTriggerSNSFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref DigitizedAvTriggerFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !ImportValue DigitizedAV-SNSTopicArn
+  
+  # Subscribe Lambda to SNS
+  DigitizedAvTriggerFunctionDigitizedAvEvents:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt DigitizedAvTriggerFunction.Arn
+      Protocol: lambda
+      TopicArn: !ImportValue DigitizedAV-SNSTopicArn
 
 Outputs:
   DigitizedAvTriggerFunction:
