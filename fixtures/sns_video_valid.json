@@ -22,7 +22,7 @@
             },
             "service": {
               "Type": "String",
-              "Value": "validation"
+              "Value": "digitized_av_validation"
             },
             "outcome": {
               "Type": "String",

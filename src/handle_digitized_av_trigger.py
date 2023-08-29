@@ -16,6 +16,8 @@ FORMAT_MAP = {
     'rac-prod-av-upload-video': 'video',
     'rac-dev-av-upload-video': 'video',
 }
+VALIDATION_SERVICE = 'digitized_av_validation'
+QC_SERVICE = 'qc'
 
 full_config_path = f"/{environ.get('ENV')}/{environ.get('APP_CONFIG_PATH')}"
 
@@ -196,12 +198,12 @@ def lambda_handler(event, context):
 
         response = f'Nothing to do for SNS event: {event}'
 
-        if (attributes['service']['Value'] == 'validation'):
+        if (attributes['service']['Value'] == VALIDATION_SERVICE):
             if attributes['outcome']['Value'] == 'SUCCESS':
                 """Handles QC approval events."""
                 response = handle_validation_approval(config, ecs_client)
 
-        if (attributes['service']['Value'] == 'qc'):
+        if (attributes['service']['Value'] == QC_SERVICE):
             if attributes['outcome']['Value'] == 'SUCCESS':
                 """Handles QC approval events."""
                 response = handle_qc_approval(config, ecs_client, attributes)
