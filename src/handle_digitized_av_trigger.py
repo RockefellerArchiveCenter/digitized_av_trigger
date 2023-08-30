@@ -17,7 +17,7 @@ FORMAT_MAP = {
     'rac-dev-av-upload-video': 'video',
 }
 VALIDATION_SERVICE = 'digitized_av_validation'
-QC_SERVICE = 'qc'
+QC_SERVICE = 'digitized_av_qc'
 
 full_config_path = f"/{environ.get('ENV')}/{environ.get('APP_CONFIG_PATH')}"
 
