@@ -80,6 +80,7 @@ def test_sns_args(mock_config):
         with open(Path('fixtures', fixture), 'r') as df:
             message = json.load(df)
             response = json.loads(lambda_handler(message, None))
+            print(response)
             assert len(response['tasks']) == 1
             assert response['tasks'][0]['startedBy'] == 'lambda/digitized_av_trigger'
             assert response['tasks'][0][

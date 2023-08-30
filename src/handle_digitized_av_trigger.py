@@ -152,7 +152,7 @@ def handle_qc_approval(config, ecs_client, attributes):
 def handle_validation_approval(config, ecs_client):
     """Scales up ECS Service when items are waiting for QC"""
     logger.info("Scaling up QC service.")
-    
+
     service = ecs_client.describe_services(
         cluster=config.get('ECS_CLUSTER'),
         services=['digitized_av_qc'])
