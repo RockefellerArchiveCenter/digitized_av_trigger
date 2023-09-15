@@ -55,7 +55,8 @@ def test_sns_args(mock_config):
     mock_config.return_value = {
         "AWS_REGION": "us-east-1",
         "ECS_CLUSTER": test_cluster_name,
-        "ECS_SUBNET": "subnet"}
+        "ECS_SUBNET": "subnet",
+        "QC_ECS_SERVICE": "digitized_av_qc"}
     client = boto3.client("ecs", region_name="us-east-1")
     client.create_cluster(clusterName=test_cluster_name)
     client.register_task_definition(
@@ -80,7 +81,6 @@ def test_sns_args(mock_config):
         with open(Path('fixtures', fixture), 'r') as df:
             message = json.load(df)
             response = json.loads(lambda_handler(message, None))
-            print(response)
             assert len(response['tasks']) == 1
             assert response['tasks'][0]['startedBy'] == 'lambda/digitized_av_trigger'
             assert response['tasks'][0][

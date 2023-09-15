@@ -155,19 +155,20 @@ def handle_validation_approval(config, ecs_client):
 
     service = ecs_client.describe_services(
         cluster=config.get('ECS_CLUSTER'),
-        services=['digitized_av_qc'])
-    if service['services'][0]['desiredCount'] < 1:
+        services=[config.get('QC_ECS_SERVICE')])
+    if (len(service['services']) and service['services']
+            [0]['desiredCount'] < 1):
         return ecs_client.update_service(
-            service='digitized_av_qc',
+            service=config.get('QC_ECS_SERVICE'),
             desiredCount=1)
 
 
-def handle_qc_complete(ecs_client):
+def handle_qc_complete(config, ecs_client):
     """Scales down ECS Service when nothing is left to QC"""
     logger.info("Scaling down QC service.")
 
     return ecs_client.update_service(
-        service='digitized_av_qc',
+        service=config.get('QC_ECS_SERVICE'),
         desiredCount=0)
 
 
@@ -213,7 +214,7 @@ def lambda_handler(event, context):
                 response = handle_qc_approval(config, ecs_client, attributes)
             elif attributes['outcome']['Value'] == 'COMPLETE':
                 """Handles completion of QC."""
-                response = handle_qc_complete(ecs_client)
+                response = handle_qc_complete(config, ecs_client)
 
     else:
         raise Exception('Unsure how to parse message')
