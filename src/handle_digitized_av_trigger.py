@@ -159,6 +159,7 @@ def handle_validation_approval(config, ecs_client):
     if (len(service['services']) and service['services']
             [0]['desiredCount'] < 1):
         return ecs_client.update_service(
+            cluster=config.get('ECS_CLUSTER'),
             service=config.get('QC_ECS_SERVICE'),
             desiredCount=1)
 
@@ -168,6 +169,7 @@ def handle_qc_complete(config, ecs_client):
     logger.info("Scaling down QC service.")
 
     return ecs_client.update_service(
+        cluster=config.get('ECS_CLUSTER'),
         service=config.get('QC_ECS_SERVICE'),
         desiredCount=0)
 
