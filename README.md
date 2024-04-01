@@ -16,6 +16,30 @@ cd digitized_av_trigger
 
 This repository is intended to be deployed as a Lambda script in AWS infrastructure.
 
+### Expected Message Format
+
+The script is designed to consume messages from an AWS S3 Bucket or an AWS Simple Notifications Service (SNS) queue. 
+
+SNS messages are expected have the following attributes:
+- `format` - the format of the package (audio or video)
+- `refid` - the ArchivesSpace refid associated with the package
+- `service` - the service which produced the message
+- `outcome` - the outcome of the service (usually `SUCCESS` or `FAILURE`, but may also be `COMPLETE`)
+- `message` - - a detailed message about the service outcome (optional)
+- `rights_ids` - rights IDs associated with the package (optional)
+
+### Configured Actions
+
+The script takes the following actions:
+- S3 events:
+    - PutObject events trigger the `digitized_av_validation` ECS task.
+- SNS events:
+    - from `validation` service:
+        -  messages with outcome `SUCCESS` scale up `digitized_av_qc` ECS service if necessary.
+    - from `qc` service:
+        -  messages with outcome `SUCCESS` trigger the `digitized_av_packaging` ECS task.
+        -  messages with outcome `COMPLETE` scale down `digitized_av_qc` ECS service.
+
 ## License
 
 This code is released under the MIT License.
