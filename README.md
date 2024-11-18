@@ -1,8 +1,6 @@
 # digitized_av_trigger
 Invokes AWS Elastic Container Service (ECS) tasks when objects are created in S3 buckets.
 
-[![Build Status](https://app.travis-ci.com/RockefellerArchiveCenter/digitized_av_trigger.svg?branch=base)](https://app.travis-ci.com/RockefellerArchiveCenter/digitized_av_trigger)
-
 ## Getting Started
 
 With [git](https://git-scm.com/) installed, pull down the source code and move into the newly created directory:
