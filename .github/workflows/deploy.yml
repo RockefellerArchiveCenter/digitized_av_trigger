@@ -16,7 +16,7 @@ jobs:
     env:
       LAMBDA_NAME: digitized_av_trigger
       LAMBDA_HANDLER_CODE: src/handle_digitized_av_trigger.py
-      BASENAME: src/handle_digitized_av_trigger.py
+      BASENAME: handle_digitized_av_trigger.py
 
     steps:
       - name: Checkout code
