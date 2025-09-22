@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import json
 import logging
 import traceback
 from os import environ
@@ -56,7 +55,7 @@ def get_config(ssm_parameter_path):
 
 
 def run_task(ecs_client, config, task_definition, environment):
-    return ecs_client.run_task(
+    response = ecs_client.run_task(
         cluster=config.get('ECS_CLUSTER'),
         launchType='FARGATE',
         networkConfiguration={
@@ -78,6 +77,7 @@ def run_task(ecs_client, config, task_definition, environment):
             ]
         }
     )
+    return ", ".join([t['taskArn'] for t in response['tasks']])
 
 
 def handle_s3_object_put(config, ecs_client, event):
@@ -108,11 +108,12 @@ def handle_s3_object_put(config, ecs_client, event):
         }
     ]
 
-    return run_task(
+    task_id = run_task(
         ecs_client,
         config,
         'digitized_av_validation',
         environment)
+    return f"Task {task_id} with definition digitized_av_validation started for package {object}."
 
 
 def handle_qc_approval(config, ecs_client, attributes):
@@ -142,11 +143,12 @@ def handle_qc_approval(config, ecs_client, attributes):
         }
     ]
 
-    return run_task(
+    task_id = run_task(
         ecs_client,
         config,
         'digitized_av_packaging',
         environment)
+    return f"Task {task_id} with definition digitized_av_packaging started for package {refid}."
 
 
 def handle_validation_approval(config, ecs_client):
@@ -158,20 +160,24 @@ def handle_validation_approval(config, ecs_client):
         services=[config.get('QC_ECS_SERVICE')])
     if (len(service['services']) and service['services']
             [0]['desiredCount'] < 1):
-        return ecs_client.update_service(
+        ecs_client.update_service(
             cluster=config.get('ECS_CLUSTER'),
             service=config.get('QC_ECS_SERVICE'),
             desiredCount=1)
+
+        return "QC service started and package discovered."
 
 
 def handle_qc_complete(config, ecs_client):
     """Scales down ECS Service when nothing is left to QC"""
     logger.info("Scaling down QC service.")
 
-    return ecs_client.update_service(
+    ecs_client.update_service(
         cluster=config.get('ECS_CLUSTER'),
         service=config.get('QC_ECS_SERVICE'),
         desiredCount=0)
+
+    return "QC service scaled down."
 
 
 def lambda_handler(event, context):
@@ -185,11 +191,11 @@ def lambda_handler(event, context):
     if event['Records'][0].get('s3'):
         """Handles events from S3 buckets."""
 
-        logger.info(f"Received S3 event {event}")
+        logger.info("Received S3 event")
 
         event_type = event['Records'][0]['eventName']
 
-        response = f'Nothing to do for S3 event: {event}'
+        response = 'Nothing to do for S3 event'
 
         if event_type in ['ObjectCreated:Put',
                           'ObjectCreated:CompleteMultipartUpload']:
@@ -199,11 +205,11 @@ def lambda_handler(event, context):
     elif event['Records'][0].get('Sns'):
         """Handles events from SNS."""
 
-        logger.info(f"Received SNS event {event}")
+        logger.info("Received SNS event")
 
         attributes = event['Records'][0]['Sns']['MessageAttributes']
 
-        response = f'Nothing to do for SNS event: {event}'
+        response = 'Nothing to do for SNS event'
 
         if (attributes['service']['Value'] == VALIDATION_SERVICE):
             if attributes['outcome']['Value'] == 'SUCCESS':
@@ -222,4 +228,3 @@ def lambda_handler(event, context):
         raise Exception('Unsure how to parse message')
 
     logger.info(response)
-    return json.dumps(response, default=str)
