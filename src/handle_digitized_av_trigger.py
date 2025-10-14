@@ -68,6 +68,7 @@ def run_task(ecs_client, config, task_definition, environment):
         taskDefinition=task_definition,
         count=1,
         startedBy='lambda/digitized_av_trigger',
+        propagateTags='TASK_DEFINITION',
         overrides={
             'containerOverrides': [
                 {
