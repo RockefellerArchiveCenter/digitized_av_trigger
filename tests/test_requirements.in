@@ -1,4 +1,4 @@
-boto3~=1.35
-coverage~=7.6
-moto~=5.0
-pytest~=8.3
+boto3~=1.40
+coverage~=7.12
+moto~=5.1
+pytest~=9.0
