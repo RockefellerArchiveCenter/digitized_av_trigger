@@ -194,47 +194,49 @@ def handle_qc_approval(config, ecs_client, attributes):
 
 def handle_validation_approval(config, ecs_client, attributes):
     """Scales up ECS Service when items are waiting for QC"""
-    logger.info("Scaling up QC service.")
     refid = attributes['refid']['Value']
 
     resp = ecs_client.describe_services(
         cluster=config.get('ECS_CLUSTER'),
         services=[config.get('QC_ECS_SERVICE')])
     if (len(resp['services']) and resp['services'][0]['desiredCount'] < 1):
-        ecs_client.update_service(
+        logger.info("Scaling up QC service.")
+        resp = ecs_client.update_service(
             cluster=config.get('ECS_CLUSTER'),
             service=config.get('QC_ECS_SERVICE'),
             desiredCount=1)
+        service = resp['service']
     else:
         logger.info("QC service already running.")
         service = resp['services'][0]
 
-        waiter = ecs_client.get_waiter('services_stable')
-        waiter.wait(
-            cluster=config['ECS_CLUSTER'],
-            services=[config['QC_ECS_SERVICE']],
-            WaiterConfig={
-                'Delay': int(config['WAIT_DELAY']),
-                'MaxAttempts': int(config['WAIT_MAX_ATTEMPTS'])
-            }
-        )
+    waiter = ecs_client.get_waiter('services_stable')
+    waiter.wait(
+        cluster=config['ECS_CLUSTER'],
+        services=[config['QC_ECS_SERVICE']],
+        WaiterConfig={
+            'Delay': int(config['WAIT_DELAY']),
+            'MaxAttempts': int(config['WAIT_MAX_ATTEMPTS'])
+        }
+    )
 
-        tasks = ecs_client.list_tasks(
-            cluster=config['ECS_CLUSTER'],
-            serviceName=config['QC_ECS_SERVICE'],
-            desiredStatus='RUNNING')
+    tasks = ecs_client.list_tasks(
+        cluster=config['ECS_CLUSTER'],
+        serviceName=config['QC_ECS_SERVICE'],
+        desiredStatus='RUNNING'
+    )
 
-        task_arn = tasks['taskArns'][0]
+    task_arn = tasks['taskArns'][0]
 
-        execute_service_command(
-            ecs_client,
-            service['clusterArn'],
-            f'python manage.py discover_packages {refid}',
-            True,
-            task_arn)
+    execute_service_command(
+        ecs_client,
+        service['clusterArn'],
+        f'python manage.py discover_packages {refid}',
+        True,
+        task_arn)
 
-        logger.info("Package discovery command executed.")
-        return "QC service started and package discovered."
+    logger.info("Package discovery command executed.")
+    return "QC service started and package discovered."
 
 
 def execute_service_command(
