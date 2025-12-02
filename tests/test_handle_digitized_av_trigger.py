@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 import boto3
 from moto import mock_aws
@@ -144,7 +144,8 @@ def test_sns_audio_args(mock_config):
 
 @mock_aws
 @patch('src.handle_digitized_av_trigger.get_config')
-def test_sns_video_args(mock_config):
+@patch('src.handle_digitized_av_trigger.execute_service_command')
+def test_sns_video_args(mock_execute_command, mock_config):
     test_cluster_name = "default"
     mock_config.return_value = get_mock_config(test_cluster_name)
     client = setup_ecs_cluster(test_cluster_name, 'digitized_av_packaging')
@@ -179,6 +180,12 @@ def test_sns_video_args(mock_config):
 
         created = client.describe_services(services=['digitized_av_qc'])
         assert created['services'][0]['desiredCount'] == 1
+        mock_execute_command.assert_called_once_with(
+            ANY,
+            created['services'][0]['clusterArn'],
+            'python manage.py discover_packages 20f8da26e268418ead4aa2365f816a08',
+            True,
+            ANY)
 
 
 @mock_aws
