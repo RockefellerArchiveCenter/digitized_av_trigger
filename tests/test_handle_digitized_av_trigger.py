@@ -8,7 +8,8 @@ import boto3
 from moto import mock_aws
 from moto.core import DEFAULT_ACCOUNT_ID
 
-from src.handle_digitized_av_trigger import get_config, lambda_handler
+from src.handle_digitized_av_trigger import (calculate_gb_needed, get_config,
+                                             lambda_handler)
 
 
 def setup_ecs_cluster(cluster_name, task_name):
@@ -34,7 +35,12 @@ def get_mock_config(cluster_name):
         "ECS_CLUSTER": cluster_name,
         "ECS_SUBNET": "subnet",
         "QC_ECS_SERVICE": "digitized_av_qc",
-        "ECS_SECURITY_GROUP": "sg-123456789"}
+        "EBS_STORAGE_MOUNT_PATH": "/ebs",
+        "EBS_VOLUME_ROLE": "arn:aws:iam:role/123456789",
+        "ECS_SECURITY_GROUP": "sg-123456789",
+        "WAIT_DELAY": "5",
+        "WAIT_MAX_ATTEMPTS": "30",
+        "EXPANSION_RATIO": "1.5"}
 
 
 @mock_aws
@@ -211,3 +217,19 @@ def test_config():
         )
     config = get_config(path)
     assert config == {'foo': 'bar', 'baz': 'buzz'}
+
+
+def test_calculate_gb_needed():
+    """Asserts GB needed are correctly calculated."""
+    for input, expected in [
+            (1000000000, 3),
+            (1900000000, 5),
+            (3900000000, 10)]:
+        output = calculate_gb_needed(input, 1.5)
+        assert output == expected
+    for input, expected in [
+            (1000000000, 3),
+            (1900000000, 6),
+            (3900000000, 11)]:
+        output = calculate_gb_needed(input)
+        assert output == expected

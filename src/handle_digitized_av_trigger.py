@@ -2,6 +2,7 @@
 
 import logging
 import traceback
+from math import ceil
 from os import environ
 
 import boto3
@@ -54,7 +55,20 @@ def get_config(ssm_parameter_path):
         return configuration
 
 
-def run_task(ecs_client, config, task_definition, environment):
+def calculate_gb_needed(object_bytes, expansion_ratio=2.0):
+    """Calculates size needed to process an object, rounded up to the nearest integer.
+
+    Args:
+        object_bytes (int): Size of the object in bytes.
+        expansion_ratio (float): Rate at which compressed files expand.
+
+    Returns:
+        gb_needed: GB needed to process the object."""
+    needed_bytes = object_bytes + (object_bytes * expansion_ratio)
+    return ceil(needed_bytes / (1024 ** 3))
+
+
+def run_task(ecs_client, config, task_definition, environment, gb_needed):
     response = ecs_client.run_task(
         cluster=config.get('ECS_CLUSTER'),
         launchType='FARGATE',
@@ -76,7 +90,25 @@ def run_task(ecs_client, config, task_definition, environment):
                     "environment": environment
                 }
             ]
-        }
+        },
+        volumeConfigurations=[
+            {
+                "name": "ebs",
+                "managedEBSVolume": {
+                    "volumeType": "gp3",
+                    "sizeInGiB": gb_needed,
+                    "throughput": 125,
+                    "encrypted": True,
+                    "roleArn": config['EBS_VOLUME_ROLE'],
+                    "tagSpecifications": [
+                        {
+                            "resourceType": "volume",
+                            "propagateTags": "TASK_DEFINITION"
+                        }
+                    ]
+                }
+            }
+        ]
     )
     return ", ".join([t['taskArn'] for t in response['tasks']])
 
@@ -86,6 +118,10 @@ def handle_s3_object_put(config, ecs_client, event):
 
     bucket = event['Records'][0]['s3']['bucket']['name']
     object = event['Records'][0]['s3']['object']['key']
+    object_bytes = event['Records'][0]['s3']['object']['size']
+    gb_needed = calculate_gb_needed(
+        int(object_bytes),
+        float(config['EXPANSION_RATIO']))
     format = FORMAT_MAP[bucket]
 
     logger.info(
@@ -113,7 +149,8 @@ def handle_s3_object_put(config, ecs_client, event):
         ecs_client,
         config,
         'digitized_av_validation',
-        environment)
+        environment,
+        gb_needed)
     return f"Task {task_id} with definition digitized_av_validation started for package {object}."
 
 
@@ -123,6 +160,8 @@ def handle_qc_approval(config, ecs_client, attributes):
     format = attributes['format']['Value']
     refid = attributes['refid']['Value']
     rights_ids = attributes['rights_ids']['Value']
+    size = attributes['size']['Value']
+    gb_needed = calculate_gb_needed(int(size))
 
     logger.info(
         "Running packaging task for event from object {} with format {}".format(
@@ -148,25 +187,64 @@ def handle_qc_approval(config, ecs_client, attributes):
         ecs_client,
         config,
         'digitized_av_packaging',
-        environment)
+        environment,
+        gb_needed)
     return f"Task {task_id} with definition digitized_av_packaging started for package {refid}."
 
 
-def handle_validation_approval(config, ecs_client):
+def handle_validation_approval(config, ecs_client, attributes):
     """Scales up ECS Service when items are waiting for QC"""
     logger.info("Scaling up QC service.")
+    refid = attributes['refid']['Value']
 
-    service = ecs_client.describe_services(
+    resp = ecs_client.describe_services(
         cluster=config.get('ECS_CLUSTER'),
         services=[config.get('QC_ECS_SERVICE')])
-    if (len(service['services']) and service['services']
-            [0]['desiredCount'] < 1):
+    if (len(resp['services']) and resp['services'][0]['desiredCount'] < 1):
         ecs_client.update_service(
             cluster=config.get('ECS_CLUSTER'),
             service=config.get('QC_ECS_SERVICE'),
             desiredCount=1)
+    else:
+        logger.info("QC service already running.")
+        service = resp['services'][0]
 
+        waiter = ecs_client.get_waiter('services_stable')
+        waiter.wait(
+            cluster=config['ECS_CLUSTER'],
+            services=[config['QC_ECS_SERVICE']],
+            WaiterConfig={
+                'Delay': int(config['WAIT_DELAY']),
+                'MaxAttempts': int(config['WAIT_MAX_ATTEMPTS'])
+            }
+        )
+
+        tasks = ecs_client.list_tasks(
+            cluster=config['ECS_CLUSTER'],
+            serviceName=config['QC_ECS_SERVICE'],
+            desiredStatus='RUNNING')
+
+        task_arn = tasks['taskArns'][0]
+
+        execute_service_command(
+            ecs_client,
+            service['clusterArn'],
+            f'python manage.py discover_packages {refid}',
+            True,
+            task_arn)
+
+        logger.info("Package discovery command executed.")
         return "QC service started and package discovered."
+
+
+def execute_service_command(
+        ecs_client, cluster, command, interactive, task_arn):
+    """Executes a command in a running service."""
+    ecs_client.execute_command(
+        cluster=cluster,
+        command=command,
+        interactive=interactive,
+        task=task_arn)
 
 
 def handle_qc_complete(config, ecs_client):
@@ -215,7 +293,8 @@ def lambda_handler(event, context):
         if (attributes['service']['Value'] == VALIDATION_SERVICE):
             if attributes['outcome']['Value'] == 'SUCCESS':
                 """Handles QC approval events."""
-                response = handle_validation_approval(config, ecs_client)
+                response = handle_validation_approval(
+                    config, ecs_client, attributes)
 
         if (attributes['service']['Value'] == QC_SERVICE):
             if attributes['outcome']['Value'] == 'SUCCESS':
