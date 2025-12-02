@@ -2,13 +2,14 @@
 
 import json
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 import boto3
 from moto import mock_aws
 from moto.core import DEFAULT_ACCOUNT_ID
 
-from src.handle_digitized_av_trigger import get_config, lambda_handler
+from src.handle_digitized_av_trigger import (calculate_gb_needed, get_config,
+                                             lambda_handler)
 
 
 def setup_ecs_cluster(cluster_name, task_name):
@@ -34,7 +35,12 @@ def get_mock_config(cluster_name):
         "ECS_CLUSTER": cluster_name,
         "ECS_SUBNET": "subnet",
         "QC_ECS_SERVICE": "digitized_av_qc",
-        "ECS_SECURITY_GROUP": "sg-123456789"}
+        "EBS_STORAGE_MOUNT_PATH": "/ebs",
+        "EBS_VOLUME_ROLE": "arn:aws:iam:role/123456789",
+        "ECS_SECURITY_GROUP": "sg-123456789",
+        "WAIT_DELAY": "5",
+        "WAIT_MAX_ATTEMPTS": "30",
+        "EXPANSION_RATIO": "1.5"}
 
 
 @mock_aws
@@ -138,7 +144,8 @@ def test_sns_audio_args(mock_config):
 
 @mock_aws
 @patch('src.handle_digitized_av_trigger.get_config')
-def test_sns_video_args(mock_config):
+@patch('src.handle_digitized_av_trigger.execute_service_command')
+def test_sns_video_args(mock_execute_command, mock_config):
     test_cluster_name = "default"
     mock_config.return_value = get_mock_config(test_cluster_name)
     client = setup_ecs_cluster(test_cluster_name, 'digitized_av_packaging')
@@ -173,6 +180,12 @@ def test_sns_video_args(mock_config):
 
         created = client.describe_services(services=['digitized_av_qc'])
         assert created['services'][0]['desiredCount'] == 1
+        mock_execute_command.assert_called_once_with(
+            ANY,
+            created['services'][0]['clusterArn'],
+            'python manage.py discover_packages 20f8da26e268418ead4aa2365f816a08',
+            True,
+            ANY)
 
 
 @mock_aws
@@ -211,3 +224,19 @@ def test_config():
         )
     config = get_config(path)
     assert config == {'foo': 'bar', 'baz': 'buzz'}
+
+
+def test_calculate_gb_needed():
+    """Asserts GB needed are correctly calculated."""
+    for input, expected in [
+            (1000000000, 3),
+            (1900000000, 5),
+            (3900000000, 10)]:
+        output = calculate_gb_needed(input, 1.5)
+        assert output == expected
+    for input, expected in [
+            (1000000000, 3),
+            (1900000000, 6),
+            (3900000000, 11)]:
+        output = calculate_gb_needed(input)
+        assert output == expected
