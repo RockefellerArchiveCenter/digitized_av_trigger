@@ -33,6 +33,7 @@ def get_mock_config(cluster_name):
     return {
         "AWS_REGION": "us-east-1",
         "ECS_CLUSTER": cluster_name,
+        "ECS_CONTAINER_NAME": "digitized_av_qc",
         "ECS_SUBNET": "subnet",
         "QC_ECS_SERVICE": "digitized_av_qc",
         "EBS_STORAGE_MOUNT_PATH": "/ebs",
@@ -183,6 +184,7 @@ def test_sns_video_args(mock_execute_command, mock_config):
         mock_execute_command.assert_called_once_with(
             ANY,
             created['services'][0]['clusterArn'],
+            'digitized_av_qc',
             'python manage.py discover_packages 20f8da26e268418ead4aa2365f816a08',
             True,
             ANY)
