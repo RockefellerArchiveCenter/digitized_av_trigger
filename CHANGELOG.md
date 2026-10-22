@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.1](https://github.com/RockefellerArchiveCenter/digitized_av_trigger/compare/v1.0.0...v1.0.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* update pip ([ef3bd95](https://github.com/RockefellerArchiveCenter/digitized_av_trigger/commit/ef3bd951e5f0d36407762a9168ca68c0f828600c))
+* update pip ([ef3bd95](https://github.com/RockefellerArchiveCenter/digitized_av_trigger/commit/ef3bd951e5f0d36407762a9168ca68c0f828600c))
+* update pip ([a426434](https://github.com/RockefellerArchiveCenter/digitized_av_trigger/commit/a4264344b80e55133a8ddc0cd922db0a5d6e1442))
+* update pip ([a426434](https://github.com/RockefellerArchiveCenter/digitized_av_trigger/commit/a4264344b80e55133a8ddc0cd922db0a5d6e1442))
+* update pip ([d233c2c](https://github.com/RockefellerArchiveCenter/digitized_av_trigger/commit/d233c2ca33fc8bde590c3c841c392b3f2325418c))
+
 ## 1.0.0 (2026-06-18)
 
 
