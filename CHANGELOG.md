@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2](https://github.com/RockefellerArchiveCenter/digitized_av_trigger/compare/v1.0.1...v1.0.2) (2026-11-02)
+
+
+### Bug Fixes
+
+* **deps:** Scheduled dependency updates ([aaab059](https://github.com/RockefellerArchiveCenter/digitized_av_trigger/commit/aaab059585975b491b8ed0e0408d86513f947048))
+* **deps:** Scheduled dependency updates ([165e0ac](https://github.com/RockefellerArchiveCenter/digitized_av_trigger/commit/165e0ac418d32a19bf3a838aec208b5d6f7cadf9))
+
 ## [1.0.1](https://github.com/RockefellerArchiveCenter/digitized_av_trigger/compare/v1.0.0...v1.0.1) (2026-10-22)
 
 
